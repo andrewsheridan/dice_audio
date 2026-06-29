@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:audio_session/audio_session.dart';
 import 'package:dice_audio/src/dice_audio_type.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_soloud/flutter_soloud.dart';
 import 'package:logging/logging.dart';
 
@@ -24,22 +25,26 @@ class DiceAudioPlayer {
        _soloud = soloud ?? SoLoud.instance;
 
   Future<void> initialize({Set<DiceAudioType> preloadTypes = const {}}) async {
+    if (_initialized) return;
+    _logger.info("Initializing...");
     try {
-      final session = await AudioSession.instance;
-
-      await session.configure(
-        const AudioSessionConfiguration(
-          avAudioSessionCategory: AVAudioSessionCategory.ambient,
-          avAudioSessionCategoryOptions:
-              AVAudioSessionCategoryOptions.mixWithOthers,
-          androidAudioAttributes: AndroidAudioAttributes(
-            contentType: AndroidAudioContentType.sonification,
-            usage: AndroidAudioUsage.game,
+      if (!kIsWeb) {
+        final session = await AudioSession.instance;
+        await session.configure(
+          const AudioSessionConfiguration(
+            avAudioSessionCategory: AVAudioSessionCategory.ambient,
+            avAudioSessionCategoryOptions:
+                AVAudioSessionCategoryOptions.mixWithOthers,
+            androidAudioAttributes: AndroidAudioAttributes(
+              contentType: AndroidAudioContentType.sonification,
+              usage: AndroidAudioUsage.game,
+            ),
+            androidAudioFocusGainType: AndroidAudioFocusGainType
+                .gainTransientMayDuck, // Tells Android to lower or mix other apps instead of killing them
           ),
-          androidAudioFocusGainType: AndroidAudioFocusGainType
-              .gainTransientMayDuck, // Tells Android to lower or mix other apps instead of killing them
-        ),
-      );
+        );
+      }
+
       await _soloud.init();
 
       for (final preloadType in preloadTypes) {
